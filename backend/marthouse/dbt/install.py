@@ -11,6 +11,7 @@ from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
 from ..config import get_settings
+from ..oscompat import venv_bin
 
 ADAPTERS = [
     {"id": "postgres", "name": "Postgres", "pkg": "dbt-postgres"},
@@ -98,8 +99,8 @@ def install_steps(version: str, adapters: list[str], name: str | None = None, py
         # a project's .venv is never cleared, dbt is added to what's there
         {"label": "Create a Python environment", "argv": [uv, "venv", "--python", python, "--seed",
                                                          "--allow-existing" if target_dir else "--clear", str(root)]},
-        {"label": "Download and install dbt", "argv": [uv, "pip", "install", "--python", str(root / "bin" / "python"), *idx, *pkgs]},
-        {"label": "Check that dbt starts", "argv": [str(root / "bin" / "dbt"), "--version"]},
+        {"label": "Download and install dbt", "argv": [uv, "pip", "install", "--python", str(venv_bin(root, "python")), *idx, *pkgs]},
+        {"label": "Check that dbt starts", "argv": [str(venv_bin(root, "dbt")), "--version"]},
     ]
     return steps, root
 

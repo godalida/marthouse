@@ -52,7 +52,7 @@ dbt and dlt are excellent tools that only speak command line. That's fine for en
 
 ## Install
 
-**Requirements:** macOS or Linux, and [uv](https://docs.astral.sh/uv/getting-started/installation/), which fetches Python 3.11+ if you don't have it. You don't need dbt or dlt; Marthouse installs them if they're missing.
+**Requirements:** macOS, Windows or Linux, and [uv](https://docs.astral.sh/uv/getting-started/installation/), which fetches Python 3.11+ if you don't have it. You don't need dbt or dlt; Marthouse installs them if they're missing.
 
 ```bash
 uvx marthouse            # run it once, without installing
@@ -185,9 +185,9 @@ Not in local mode. Marthouse runs dbt and dlt on your computer, listens on `127.
 </details>
 
 <details>
-<summary><b>Windows?</b></summary>
+<summary><b>Does it work on Windows?</b></summary>
 
-Not yet tested. Marthouse is developed on macOS and should work on Linux. Windows support is on the roadmap, and help is welcome.
+Yes. Marthouse runs natively on Windows, macOS and Linux, and every change is tested on all three, including real dbt and dlt runs on Windows and Linux. It finds dbt in project `.venv` folders, on your PATH, and in pipx, uv and conda environments, and the Windows folder picker and "open in terminal" work too. Team mode's Docker setup runs on Linux servers.
 </details>
 
 ## Roadmap
@@ -201,7 +201,8 @@ Not yet tested. Marthouse is developed on macOS and should work on Linux. Window
 - [ ] Turn hand-written SQL into builder steps
 - [ ] dbt projects inside a subfolder of the repository
 - [ ] Database migrations for upgrades (Alembic)
-- [ ] Windows support and desktop builds
+- [x] Windows, macOS and Linux
+- [ ] Desktop builds
 - [ ] More tools: SQLFluff, a dbt packages browser
 
 Have an idea? [Open a feature request](https://github.com/godalida/marthouse/issues/new?template=feature_request.yml).

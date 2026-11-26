@@ -14,6 +14,7 @@ from packaging.version import Version
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from ..oscompat import exe
 from .. import __version__, appsettings, jobs, profiles
 from ..config import get_settings
 from ..db import get_db
@@ -381,11 +382,11 @@ class FormatBody(BaseModel):
 async def format_sql(body: FormatBody, c: Ctx = Depends(ctx), db: Session = Depends(get_db)) -> dict:
     if appsettings.get(db, "formatter", c.ws) != "sqlfmt":
         raise HTTPException(400, "Choose a formatter in Settings › Editor.")
-    uvx = str(Path(install.uv_bin()).with_name("uvx"))
+    uvx = str(Path(install.uv_bin()).with_name(exe("uvx")))
     argv = [uvx, "--from", "shandy-sqlfmt[jinjafmt]", "sqlfmt", "-"]
     if not Path(uvx).exists():
         argv = [install.uv_bin(), "tool", "run", "--from", "shandy-sqlfmt[jinjafmt]", "sqlfmt", "-"]
-    r = await asyncio.to_thread(subprocess.run, argv, input=body.sql, capture_output=True, text=True, timeout=120)
+    r = await asyncio.to_thread(subprocess.run, argv, input=body.sql, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
     if r.returncode not in (0, 1) or not r.stdout:
         raise HTTPException(400, (r.stderr or "sqlfmt failed").strip().splitlines()[-1])
     return {"sql": r.stdout}
@@ -557,13 +558,13 @@ def visual_save(body: VisualSave, p: Project = Depends(get_project), c: Ctx = De
     try:
         f = safe_path(p.path, body.path)
         if f.exists():
-            existing = visual.parse(f.read_text())
+            existing = visual.parse(f.read_text(encoding="utf-8"))
             if not body.overwrite or existing is None:
                 raise HTTPException(409, f"{body.path} already exists." if existing is None else "exists")
             if existing["edited"]:
                 raise HTTPException(409, f"{body.path} was edited by hand since the builder saved it. Save under a new name.")
         f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_text(visual.model_sql(body.spec))
+        f.write_text(visual.model_sql(body.spec), encoding="utf-8")
     except visual.VisualError as e:
         raise HTTPException(400, str(e)) from e
     except ProjectError as e:
@@ -582,7 +583,7 @@ def visual_load(path: str, p: Project = Depends(get_project)) -> dict:
         raise HTTPException(400, str(e)) from e
     if not f.is_file():
         raise HTTPException(404, "File not found.")
-    r = visual.parse(f.read_text())
+    r = visual.parse(f.read_text(encoding="utf-8"))
     if r is None:
         raise HTTPException(409, "This model wasn't made in the visual builder.")
     return {**r, "path": path}

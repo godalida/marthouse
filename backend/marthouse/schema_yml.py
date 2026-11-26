@@ -102,7 +102,7 @@ def apply(root: str | Path, node: dict, project_name: str, description: str | No
     rel = yml_path_for(node, project_name)
     f = Path(root) / rel
     y = _y()
-    doc = y.load(f.read_text()) if f.exists() else None
+    doc = y.load(f.read_text(encoding="utf-8")) if f.exists() else None
     if not doc:
         doc = CommentedMap({"version": 2})
     entry = _find_entry(doc, node)
@@ -145,7 +145,7 @@ def apply(root: str | Path, node: dict, project_name: str, description: str | No
     y.dump(doc, buf)
     if not dry_run:
         f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_text(buf.getvalue())
+        f.write_text(buf.getvalue(), encoding="utf-8")
     return {"path": rel, "text": buf.getvalue()}
 
 
@@ -155,7 +155,7 @@ def read(root: str | Path, node: dict, project_name: str) -> dict:
     out: dict[str, Any] = {"path": rel, "exists": f.exists(), "columns": {}}
     if not f.exists():
         return out
-    doc = _y().load(f.read_text()) or {}
+    doc = _y().load(f.read_text(encoding="utf-8")) or {}
     try:
         entry = _find_entry(doc, node)
     except Exception:

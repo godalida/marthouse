@@ -7,21 +7,58 @@ on:
 
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    name: Tests (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python: ["3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.13"]
+    defaults:
+      run:
+        shell: bash
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
       - name: Install
-        working-directory: backend
         run: |
           uv venv --python ${{ matrix.python }} .venv
-          uv pip install --python .venv/bin/python -e ".[dev,hosted]"
+          uv pip install --python .venv -e ".[dev,hosted]"
+          if [ "$RUNNER_OS" = "Windows" ]; then echo "PY=.venv/Scripts/python.exe"; else echo "PY=.venv/bin/python"; fi >> "$GITHUB_ENV"
+      - name: Test
+        run: $PY -m pytest -q
+
+  e2e:
+    # Real dbt and dlt, installed the way people do: dbt in a project's .venv, dlt in its own environment
+    name: End to end (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Marthouse, dbt and dlt
+        run: |
+          bin=bin; ext=""
+          if [ "$RUNNER_OS" = "Windows" ]; then bin=Scripts; ext=".exe"; fi
+          uv venv --python 3.12 backend/.venv
+          uv pip install --python backend/.venv -e "backend[dev,hosted]"
+          uv venv --python 3.12 "$RUNNER_TEMP/proj/.venv"
+          uv pip install --python "$RUNNER_TEMP/proj/.venv" dbt-core dbt-duckdb
+          uv venv --python 3.12 "$RUNNER_TEMP/dltenv"
+          uv pip install --python "$RUNNER_TEMP/dltenv" "dlt[duckdb,sql_database,filesystem]" pandas
+          echo "PY=.venv/$bin/python$ext" >> "$GITHUB_ENV"
+          echo "MARTHOUSE_TEST_DBT=$RUNNER_TEMP/proj/.venv/$bin/dbt$ext" >> "$GITHUB_ENV"
+          echo "MARTHOUSE_TEST_DLT_PY=$RUNNER_TEMP/dltenv/$bin/python$ext" >> "$GITHUB_ENV"
       - name: Test
         working-directory: backend
-        run: .venv/bin/python -m pytest -q
+        run: $PY -m pytest -q -rs
 
   frontend:
     runs-on: ubuntu-latest

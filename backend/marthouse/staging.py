@@ -69,7 +69,7 @@ def write(root: str | Path, source: str, table: str, path: str, columns: list[di
     if f.exists():
         raise ProjectError(f"{path} already exists.")
     f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text(render_sql(source, table, columns))
+    f.write_text(render_sql(source, table, columns), encoding="utf-8")
     model = Path(path).stem
     node = {"resource_type": "model", "name": model, "original_file_path": path}
     cols: dict[str, dict] = {}

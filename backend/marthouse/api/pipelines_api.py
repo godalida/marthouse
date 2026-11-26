@@ -80,7 +80,7 @@ def get_pipeline(name: str, p: Project = Depends(get_project), db: Session = Dep
     secrets = [{**f, "stored": secrets_store.has_secret(db, p.workspace_id, codegen.secret_env(name, f["key"]))}
                for f in codegen.secret_fields(spec)]
     return {"spec": spec, "summary": _summary(db, p, spec), "inspect": service.cached(p, name),
-            "code": script.read_text() if script.exists() else "", "script": script.name, "secrets": secrets}
+            "code": script.read_text(encoding="utf-8") if script.exists() else "", "script": script.name, "secrets": secrets}
 
 
 @router.put("/{name}")
@@ -245,7 +245,7 @@ def verified_refresh(name: str, p: Project = Depends(get_project), c: Ctx = Depe
     script = service.script_path(p, spec)
     if not script.exists():
         raise HTTPException(409, "dlt init hasn't written the script yet.")
-    m = re.findall(r'pipeline_name\s*=\s*["\']([A-Za-z0-9_]+)["\']', script.read_text())
+    m = re.findall(r'pipeline_name\s*=\s*["\']([A-Za-z0-9_]+)["\']', script.read_text(encoding="utf-8"))
     v["pipeline_name"] = m[0] if m else v.get("pipeline_name") or name
     v["secret_keys"] = service.read_verified_secrets(p, v["source"])
     spec["verified"] = v

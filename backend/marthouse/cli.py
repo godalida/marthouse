@@ -16,6 +16,9 @@ def main() -> None:
     args = ap.parse_args()
 
     os.environ["MARTHOUSE_PORT"] = str(args.port)
+    # Programs Marthouse starts (dbt, dlt, Python probes) print UTF-8, also on Windows
+    os.environ.setdefault("PYTHONUTF8", "1")
+    os.environ.setdefault("PYTHONIOENCODING", "utf-8")
     if args.hosted:
         os.environ["MARTHOUSE_MODE"] = "hosted"
     from .config import get_settings

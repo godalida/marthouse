@@ -23,7 +23,7 @@ def _fernet() -> Fernet:
         if not f.exists():
             f.write_bytes(Fernet.generate_key())
             f.chmod(0o600)
-        key = f.read_text().strip()
+        key = f.read_text(encoding="utf-8").strip()
     return Fernet(key.encode() if isinstance(key, str) else key)
 
 
