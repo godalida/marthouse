@@ -1,0 +1,15 @@
+kind: filesystem
+dataset: raw_files
+write_disposition: replace
+destination:
+  type: dbt
+filesystem:
+  bucket_url: seeds
+  tables:
+    - name: customers
+      glob: raw_customers.csv
+      format: csv
+    - name: orders
+      glob: raw_orders.csv
+      format: csv
+name: shop_files

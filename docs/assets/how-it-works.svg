@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-label="How Marthouse works: dlt pipelines load sources into your warehouse, dbt models transform them, and you explore the results; schedules run it all">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#7C7EFF"/>
+    </marker>
+  </defs>
+  <rect width="1280" height="420" rx="24" fill="#15151A"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+    <!-- columns -->
+    <g>
+      <text x="64" y="64" fill="#8A8A99" font-size="14" font-weight="600">SOURCES</text>
+      <rect x="64" y="84" width="200" height="56" rx="12" fill="#1E1E24" stroke="#FFFFFF" stroke-opacity="0.12"/>
+      <text x="84" y="118" fill="#FFFFFF" font-size="17">REST APIs</text>
+      <rect x="64" y="152" width="200" height="56" rx="12" fill="#1E1E24" stroke="#FFFFFF" stroke-opacity="0.12"/>
+      <text x="84" y="186" fill="#FFFFFF" font-size="17">SQL databases</text>
+      <rect x="64" y="220" width="200" height="56" rx="12" fill="#1E1E24" stroke="#FFFFFF" stroke-opacity="0.12"/>
+      <text x="84" y="254" fill="#FFFFFF" font-size="17">Files and buckets</text>
+      <rect x="64" y="288" width="200" height="56" rx="12" fill="#1E1E24" stroke="#FFFFFF" stroke-opacity="0.12"/>
+      <text x="84" y="322" fill="#FFFFFF" font-size="17">SaaS apps</text>
+    </g>
+    <g>
+      <text x="340" y="64" fill="#A7A9FF" font-size="14" font-weight="600">LOAD · dlt</text>
+      <rect x="340" y="84" width="230" height="260" rx="16" fill="#1E1E2A" stroke="#5B5BD6" stroke-width="2"/>
+      <text x="364" y="124" fill="#FFFFFF" font-size="19" font-weight="700">Pipelines</text>
+      <text x="364" y="160" fill="#B9B9C6" font-size="15">Form-based builder</text>
+      <text x="364" y="188" fill="#B9B9C6" font-size="15">Only loads what's new</text>
+      <text x="364" y="216" fill="#B9B9C6" font-size="15">Schema kept up to date</text>
+      <text x="364" y="244" fill="#B9B9C6" font-size="15">Readable Python you own</text>
+    </g>
+    <g>
+      <text x="646" y="64" fill="#8A8A99" font-size="14" font-weight="600">WAREHOUSE</text>
+      <rect x="646" y="140" width="170" height="148" rx="16" fill="#1E1E24" stroke="#FFFFFF" stroke-opacity="0.12"/>
+      <text x="668" y="196" fill="#FFFFFF" font-size="17" font-weight="600">DuckDB</text>
+      <text x="668" y="222" fill="#B9B9C6" font-size="14">Postgres, Snowflake,</text>
+      <text x="668" y="244" fill="#B9B9C6" font-size="14">BigQuery, Databricks…</text>
+    </g>
+    <g>
+      <text x="892" y="64" fill="#A7A9FF" font-size="14" font-weight="600">TRANSFORM · dbt Core</text>
+      <rect x="892" y="84" width="150" height="260" rx="16" fill="#1E1E2A" stroke="#5B5BD6" stroke-width="2"/>
+      <text x="914" y="124" fill="#FFFFFF" font-size="19" font-weight="700">Models</text>
+      <text x="914" y="160" fill="#B9B9C6" font-size="15">SQL or visual</text>
+      <text x="914" y="188" fill="#B9B9C6" font-size="15">Tests</text>
+      <text x="914" y="216" fill="#B9B9C6" font-size="15">Docs</text>
+      <text x="914" y="244" fill="#B9B9C6" font-size="15">Lineage</text>
+    </g>
+    <g>
+      <text x="1086" y="64" fill="#8A8A99" font-size="14" font-weight="600">EXPLORE</text>
+      <rect x="1086" y="84" width="140" height="80" rx="12" fill="#1E1E24" stroke="#FFFFFF" stroke-opacity="0.12"/>
+      <text x="1106" y="130" fill="#FFFFFF" font-size="17">SQL</text>
+      <rect x="1086" y="176" width="140" height="80" rx="12" fill="#1E1E24" stroke="#FFFFFF" stroke-opacity="0.12"/>
+      <text x="1106" y="222" fill="#FFFFFF" font-size="17">Catalog</text>
+      <rect x="1086" y="268" width="140" height="76" rx="12" fill="#1E1E24" stroke="#FFFFFF" stroke-opacity="0.12"/>
+      <text x="1106" y="312" fill="#FFFFFF" font-size="17">Your BI tool</text>
+    </g>
+    <!-- arrows -->
+    <g stroke="#7C7EFF" stroke-width="2.5" fill="none" marker-end="url(#arrow)">
+      <path d="M270 214 H332"/>
+      <path d="M576 214 H638"/>
+      <path d="M822 214 H884"/>
+      <path d="M1048 214 H1078"/>
+    </g>
+    <!-- schedules bar -->
+    <rect x="340" y="364" width="702" height="36" rx="10" fill="#5B5BD6" fill-opacity="0.18" stroke="#5B5BD6" stroke-opacity="0.5"/>
+    <text x="691" y="388" text-anchor="middle" fill="#D6D7FF" font-size="15">Schedules run load and transform steps in order, with an alert if a run fails</text>
+  </g>
+</svg>

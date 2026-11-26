@@ -1,0 +1,45 @@
+name: Bug report
+description: Something doesn't work the way it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting. For a security problem, use the Security tab instead of an issue.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the jaffle_shop example
+        2. Go to Model builder
+        3. …
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options: [Local, Hosted (Docker), Hosted (other)]
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Marthouse, dbt and adapter, dlt, OS. Settings › Tools shows dbt and dlt.
+      placeholder: Marthouse 0.1.0, dbt 1.10 + duckdb, dlt 1.32, macOS 27
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log output
+      description: The run's log or the server's terminal output. Remove any secrets first.
+      render: text

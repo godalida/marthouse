@@ -1,0 +1,8 @@
+# Sample connection for the example project. DuckDB keeps everything in one local file.
+jaffle_shop:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: jaffle.duckdb
+      threads: 4

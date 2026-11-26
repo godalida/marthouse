@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest something Marthouse should do.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the job, not the solution. "I want to see which models are slowest" works better than "add a chart".
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: How do you do it today?
+      description: The dbt or dlt command, script, or other tool you use now.
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would good look like?
+      description: Optional. A sketch or screenshot of a similar tool helps.
+  - type: dropdown
+    id: who
+    attributes:
+      label: Who are you?
+      options: [Analytics engineer, Data analyst, BI developer, Data engineer, Other]

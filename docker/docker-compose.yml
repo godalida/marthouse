@@ -1,0 +1,59 @@
+# Hosted Lineage for a small team or a trial deployment.
+#   cp docker/.env.example docker/.env   (then edit the secrets)
+#   docker compose -f docker/docker-compose.yml --env-file docker/.env up --build
+# Put a TLS proxy (Caddy, nginx, a load balancer) in front and set MARTHOUSE_COOKIE_SECURE=true.
+services:
+  api:
+    build: { context: .., dockerfile: docker/Dockerfile }
+    env_file: .env
+    environment:
+      MARTHOUSE_DATABASE_URL: postgresql+psycopg://lineage:${POSTGRES_PASSWORD}@db/lineage
+      MARTHOUSE_REDIS_URL: redis://redis:6379
+      MARTHOUSE_USE_QUEUE: "true"
+    ports: ["${MARTHOUSE_PORT:-8765}:8765"]
+    volumes: [data:/data]
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_started }
+    restart: unless-stopped
+
+  # Runs dbt. User code never runs in the API container. For stronger isolation in production,
+  # run one short-lived container per job (e.g. on a job runner) with no access to the database.
+  worker:
+    build: { context: .., dockerfile: docker/Dockerfile }
+    command: ["arq", "marthouse.workers.worker.WorkerSettings"]
+    env_file: .env
+    environment:
+      MARTHOUSE_DATABASE_URL: postgresql+psycopg://lineage:${POSTGRES_PASSWORD}@db/lineage
+      MARTHOUSE_REDIS_URL: redis://redis:6379
+      MARTHOUSE_USE_QUEUE: "true"
+    volumes: [data:/data]
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_started }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "2", memory: 3g }
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: lineage
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: lineage
+    volumes: [pg:/var/lib/postgresql/data]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lineage -d lineage"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+volumes:
+  data:
+  pg:

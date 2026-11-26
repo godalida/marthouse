@@ -1,0 +1,23 @@
+version: 2
+
+sources:
+  - name: jaffle
+    description: Raw tables from the shop. In this example the seed files stand in for them.
+    schema: main_raw
+    loader: Fivetran
+    freshness:
+      warn_after: {count: 12, period: hour}
+      error_after: {count: 24, period: hour}
+    tables:
+      - name: raw_customers
+        description: Sign-ups. No load time is recorded, so freshness isn't checked.
+        freshness: null
+      - name: raw_orders
+        description: Raw orders from the shop.
+        # The example has no real loader, so the load time is simulated as 42 minutes ago.
+        loaded_at_field: "(now() at time zone 'UTC') - interval 42 minute"
+      - name: raw_payments
+        description: Charges and refunds.
+        loader: Airbyte
+        # Simulated as 14 hours ago, so it shows a freshness warning.
+        loaded_at_field: "(now() at time zone 'UTC') - interval 14 hour"

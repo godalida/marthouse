@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: customers
+    description: One row per customer, with their first and most recent order and lifetime value.
+    meta:
+      owner: growth team
+    columns:
+      - name: customer_id
+        description: Primary key. One per customer.
+        data_tests: [unique, not_null]
+      - name: first_name
+        description: Given name as entered at sign-up.
+      - name: first_order
+        description: Date of the customer's first order.
+      - name: number_of_orders
+        description: Orders, all time.
+        data_tests: [not_null]
+      - name: lifetime_value
+  - name: orders
+    description: One row per order, with the amount paid by each method.
+    columns:
+      - name: order_id
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        data_tests:
+          - relationships:
+              to: ref('customers')
+              field: customer_id
+      - name: amount
+        description: Total paid for the order.
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: order_date
+      - name: status
+        description: Where the order is in fulfilment
+        data_tests:
+          - not_null
+      - name: credit_card_amount
+      - name: coupon_amount
+      - name: bank_transfer_amount
+      - name: gift_card_amount
+exposures:
+  - name: weekly_revenue
+    type: dashboard
+    maturity: high
+    description: Revenue dashboard reviewed every Monday.
+    owner:
+      name: Finance
+    depends_on:
+      - ref('orders')
+      - ref('customers')

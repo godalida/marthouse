@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea to discuss
+    url: https://github.com/godalida/marthouse/discussions
+    about: Ask how to do something, or talk through an idea before filing it.
+  - name: Security problem
+    url: https://github.com/godalida/marthouse/security/advisories/new
+    about: Report privately. Please don't open a public issue.
