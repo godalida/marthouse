@@ -4,6 +4,12 @@ All notable changes to Marthouse are listed here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-27
+
+### Fixed
+
+- The PyPI page now shows the README, project links and categories.
+
 ## [0.1.0] - 2026-11-26
 
 First public release.
@@ -16,7 +22,8 @@ First public release.
 - **SQL scratchpad** with `ref()` and `source()`, query history, CSV download and "Save as model".
 - **Docs and tests without YAML**, and a staging-model generator.
 - **Schedules** with webhook alerts on failure.
-- **Hosted mode:** accounts, workspaces, roles, Git checkouts, a job worker over Redis, and Docker Compose.
+- **Team mode (self-hosted):** accounts, workspaces, roles, Git checkouts, a job worker over Redis, and Docker Compose.
 
-[Unreleased]: https://github.com/godalida/marthouse/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/godalida/marthouse/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/godalida/marthouse/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/godalida/marthouse/releases/tag/v0.1.0

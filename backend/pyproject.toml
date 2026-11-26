@@ -1,7 +1,25 @@
 [project]
 name = "marthouse"
-version = "0.1.0"
-description = "Marthouse: a GUI for dbt Core and dlt. Runs locally or as a hosted service."
+version = "0.1.1"
+description = "The open-source app for dbt Core and dlt: load, transform and explore your data without living in a terminal."
+readme = "README.md"
+authors = [{ name = "Glenn Dalida" }]
+keywords = ["dbt", "dbt-core", "dlt", "data", "analytics-engineering", "elt", "sql", "lineage", "gui"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Web Environment",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Database",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+]
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 dependencies = [
@@ -19,6 +37,12 @@ dependencies = [
   "python-multipart>=0.0.9",
   "uv>=0.4",
 ]
+
+[project.urls]
+Homepage = "https://github.com/godalida/marthouse"
+Source = "https://github.com/godalida/marthouse"
+Issues = "https://github.com/godalida/marthouse/issues"
+Changelog = "https://github.com/godalida/marthouse/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 hosted = ["arq>=0.26", "redis>=5", "psycopg[binary]>=3.2"]

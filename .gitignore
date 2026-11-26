@@ -15,4 +15,5 @@ examples/*/*.duckdb
 .env
 docker/.env
 backend/dist/
+backend/README.md
 .claude/

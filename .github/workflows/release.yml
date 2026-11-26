@@ -25,7 +25,9 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - name: Build wheel and sdist
         working-directory: backend
-        run: uv build
+        run: |
+          python ../scripts/pypi_readme.py
+          uv build
       - name: Check the wheel contains the web app
         working-directory: backend
         run: python -c "import zipfile,glob; z=zipfile.ZipFile(glob.glob('dist/*.whl')[0]); assert any(n.startswith('marthouse/static/') for n in z.namelist()), 'web app missing'"

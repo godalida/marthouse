@@ -6,6 +6,7 @@
   <a href="https://github.com/godalida/marthouse/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/godalida/marthouse/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache%202.0-5B5BD6?style=flat-square"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white">
+  <a href="https://pypi.org/project/marthouse/"><img alt="PyPI" src="https://img.shields.io/pypi/v/marthouse?style=flat-square&color=5B5BD6"></a>
   <img alt="dbt Core 1.8+" src="https://img.shields.io/badge/dbt%20Core-1.8%2B-5B5BD6?style=flat-square">
   <img alt="dlt 1.x" src="https://img.shields.io/badge/dlt-1.x-5B5BD6?style=flat-square">
   <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-2EA44F?style=flat-square"></a>
@@ -51,27 +52,13 @@ dbt and dlt are excellent tools that only speak command line. That's fine for en
 
 ## Install
 
-**Requirements:** macOS or Linux, Python 3.11+ and [uv](https://docs.astral.sh/uv/getting-started/installation/). You don't need dbt or dlt; Marthouse installs them if they're missing.
-
-> [!NOTE]
-> Marthouse is about to have its first release on PyPI. Until then, install from source.
-
-**From PyPI** (after the first release):
+**Requirements:** macOS or Linux, and [uv](https://docs.astral.sh/uv/getting-started/installation/), which fetches Python 3.11+ if you don't have it. You don't need dbt or dlt; Marthouse installs them if they're missing.
 
 ```bash
 uvx marthouse            # run it once, without installing
-pipx install marthouse   # or install the `marthouse` command
 ```
 
-**From source** (today):
-
-```bash
-git clone https://github.com/godalida/marthouse.git
-cd marthouse/backend
-uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
-cd ../frontend && npm install && npx vite build
-../backend/.venv/bin/marthouse
-```
+Or install the `marthouse` command with `uv tool install marthouse`, `pipx install marthouse` or `pip install marthouse`. To run it from source, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Your browser opens Marthouse, and the first run walks you through it:
 
@@ -209,8 +196,8 @@ Not yet tested. Marthouse is developed on macOS and should work on Linux. Window
 - [x] dlt: REST API, SQL, files and verified sources; schema, loads and state; dbt source generation
 - [x] Visual model builder with live previews
 - [x] Schedules with failure alerts
-- [x] Hosted mode with workspaces and roles
-- [ ] One-line install from PyPI (`uvx marthouse`)
+- [x] Self-hosted team mode with workspaces and roles
+- [x] One-line install from PyPI (`uvx marthouse`)
 - [ ] Turn hand-written SQL into builder steps
 - [ ] dbt projects inside a subfolder of the repository
 - [ ] Database migrations for upgrades (Alembic)
