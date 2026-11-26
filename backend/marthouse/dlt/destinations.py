@@ -64,7 +64,7 @@ def from_dbt_target(db: Session, ws: str, profiles_path: Path, dbt_project_dir: 
             env[f"DESTINATION__{p}__LOCATION"] = str(f["location"])
         kf = f.get("keyfile")
         if kf and Path(str(kf)).expanduser().is_file():
-            env[f"DESTINATION__{p}__CREDENTIALS"] = Path(str(kf)).expanduser().read_text()
+            env[f"DESTINATION__{p}__CREDENTIALS"] = Path(str(kf)).expanduser().read_text(encoding="utf-8")
         elif f.get("project"):
             env[f"DESTINATION__{p}__CREDENTIALS__PROJECT_ID"] = str(f["project"])
     elif t == "databricks":

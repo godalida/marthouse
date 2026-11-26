@@ -1,11 +1,11 @@
 """dbt project folders: validation, file tree, safe file access, scaffolding and Git."""
 from __future__ import annotations
 
+import base64
 import os
-import stat
 import subprocess
-import tempfile
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from ruamel.yaml import YAML
 
@@ -24,7 +24,7 @@ def read_project_yml(root: str | Path) -> dict:
     if not f.is_file():
         raise ProjectError("This folder has no dbt_project.yml, so it isn't a dbt project.")
     try:
-        data = _yaml.load(f.read_text()) or {}
+        data = _yaml.load(f.read_text(encoding="utf-8")) or {}
     except Exception as e:
         raise ProjectError(f"dbt_project.yml couldn't be read: {e}") from e
     return data
@@ -75,7 +75,7 @@ def tree(root: str | Path) -> list[dict]:
         for p in entries:
             if p.name in SKIP_DIRS or (p.name.startswith(".") and p.name not in (".sqlfluff", ".gitignore")):
                 continue
-            rel = str(p.relative_to(base))
+            rel = p.relative_to(base).as_posix()
             if p.is_file() and p.suffix.lower() in BINARY_EXT:
                 continue
             if p.is_dir():
@@ -94,7 +94,7 @@ def read_file(root: str | Path, rel: str) -> dict:
     if p.stat().st_size > 2_000_000:
         raise ProjectError("File is larger than 2 MB.")
     try:
-        text = p.read_text()
+        text = p.read_text(encoding="utf-8")
     except UnicodeDecodeError as e:
         raise ProjectError("Binary file.") from e
     return {"path": rel, "content": text, "mtime": p.stat().st_mtime}
@@ -103,7 +103,7 @@ def read_file(root: str | Path, rel: str) -> dict:
 def write_file(root: str | Path, rel: str, content: str) -> dict:
     p = safe_path(root, rel)
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(content)
+    p.write_text(content, encoding="utf-8")
     return {"path": rel, "mtime": p.stat().st_mtime}
 
 
@@ -137,7 +137,7 @@ def stale_files(root: str | Path) -> list[str]:
     for d in dirs:
         for p in (root / d).rglob("*"):
             if p.is_file() and p.suffix in (".sql", ".yml", ".yaml", ".csv", ".py") and p.stat().st_mtime > m:
-                out.append(str(p.relative_to(root)))
+                out.append(p.relative_to(root).as_posix())
     if (root / "dbt_project.yml").stat().st_mtime > m:
         out.append("dbt_project.yml")
     return sorted(out)
@@ -190,8 +190,8 @@ def scaffold_pipelines_only(parent: str | Path, name: str) -> Path:
     if root.exists() and any(root.iterdir()):
         raise ProjectError(f"{root} already exists and isn't empty.")
     (root / "pipelines").mkdir(parents=True)
-    (root / "pipelines" / ".gitignore").write_text(".dlt-data/\n.dlt/secrets.toml\n*.duckdb\n")
-    (root / "README.md").write_text(f"# {name}\n\nData pipelines made with Marthouse (dlt).\n")
+    (root / "pipelines" / ".gitignore").write_text(".dlt-data/\n.dlt/secrets.toml\n*.duckdb\n", encoding="utf-8")
+    (root / "README.md").write_text(f"# {name}\n\nData pipelines made with Marthouse (dlt).\n", encoding="utf-8")
     return root
 
 
@@ -206,14 +206,14 @@ def scaffold(parent: str | Path, name: str) -> Path:
     for rel, text in SCAFFOLD.items():
         p = root / rel
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(text.format(name=name))
+        p.write_text(text.format(name=name), encoding="utf-8")
     return root
 
 
 # ---------- Git ----------
 
 def _git(root: str | Path, *args: str, env: dict | None = None, timeout: int = 60) -> subprocess.CompletedProcess:
-    return subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=timeout,
+    return subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout,
                           env={**os.environ, "GIT_TERMINAL_PROMPT": "0", **(env or {})})
 
 
@@ -236,19 +236,25 @@ def git_info(root: str | Path) -> dict | None:
     }
 
 
-def _askpass_env(token: str | None) -> tuple[dict, str | None]:
-    """Pass a Git token through GIT_ASKPASS so it never appears in the URL or process list."""
-    if not token:
-        return {}, None
-    fd, path = tempfile.mkstemp(prefix="marthouse-askpass-", suffix=".sh")
-    with os.fdopen(fd, "w") as f:
-        f.write('#!/bin/sh\ncase "$1" in *sername*) echo "x-access-token";; *) echo "$MARTHOUSE_GIT_TOKEN";; esac\n')
-    os.chmod(path, stat.S_IRWXU)
-    return {"GIT_ASKPASS": path, "MARTHOUSE_GIT_TOKEN": token}, path
+def _askpass_env(token: str | None, url: str) -> tuple[dict, str | None]:
+    """Give Git a token through environment-variable config (Git 2.31+), on every OS.
+
+    The token never appears in the URL, the process list or a file, and isn't saved in the
+    repository's config. It is scoped to the repository's host, so a redirect elsewhere never
+    receives it. Basic auth with the `x-access-token` user works for GitHub tokens and
+    GitLab/Bitbucket access tokens alike.
+    """
+    u = urlsplit(url)
+    if not token or u.scheme not in ("http", "https") or not u.hostname:
+        return {}, None  # SSH remotes use the user's SSH keys instead
+    origin = f"{u.scheme}://{u.hostname}{f':{u.port}' if u.port else ''}"
+    basic = base64.b64encode(f"x-access-token:{token}".encode()).decode()
+    return {"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": f"http.{origin}/.extraHeader",
+            "GIT_CONFIG_VALUE_0": f"Authorization: Basic {basic}", "GIT_TERMINAL_PROMPT": "0"}, None
 
 
 def git_clone(url: str, dest: str | Path, branch: str = "", token: str | None = None) -> None:
-    env, tmp = _askpass_env(token)
+    env, tmp = _askpass_env(token, url)
     try:
         args = ["clone", "--depth", "50"]
         if branch:
@@ -262,7 +268,7 @@ def git_clone(url: str, dest: str | Path, branch: str = "", token: str | None = 
 
 
 def git_pull(root: str | Path, token: str | None = None) -> str:
-    env, tmp = _askpass_env(token)
+    env, tmp = _askpass_env(token, _git(root, "remote", "get-url", "origin").stdout.strip())
     try:
         r = _git(root, "pull", "--ff-only", env=env, timeout=120)
         if r.returncode != 0:
@@ -283,7 +289,7 @@ def git_commit_push(root: str | Path, message: str, author: str = "", token: str
         raise ProjectError(r.stderr.strip() or r.stdout.strip())
     if not push:
         return r.stdout.strip()
-    env, tmp = _askpass_env(token)
+    env, tmp = _askpass_env(token, _git(root, "remote", "get-url", "origin").stdout.strip())
     try:
         p = _git(root, "push", env=env, timeout=120)
         if p.returncode != 0:

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from ..oscompat import exe, venv_bin
 from .. import appsettings, jobs
 from ..config import get_settings
 from ..db import get_db
@@ -73,7 +74,7 @@ async def inspect(body: PathBody, c: Ctx = Depends(need("admin")), db: Session =
         raise HTTPException(404)
     p = Path(body.path).expanduser()
     if p.is_dir():
-        p = p / "bin" / "dbt" if (p / "bin" / "dbt").exists() else p / "dbt"
+        p = venv_bin(p, "dbt") if venv_bin(p, "dbt").exists() else p / exe("dbt")
     private = get_settings().private_dbt_dir.resolve()
     kind = "private" if private in p.resolve().parents else "project" if ".venv" in p.parts else "custom"
     inst = await asyncio.to_thread(detect.inspect, str(p), kind)

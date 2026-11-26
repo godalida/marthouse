@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from ..oscompat import venv_bin
 from .. import appsettings, jobs, projects, secrets_store
 from ..config import get_settings
 from ..db import get_db
@@ -43,7 +44,7 @@ def project_dict(db: Session, p: Project, full: bool = False) -> dict:
         except jobs.JobError as e:
             d["dbt"], d["dbt_missing"], d["dbt_error"] = None, True, str(e)
         d["dbt_override"] = p.dbt_path
-        d["venv_has_dbt"] = (Path(p.path) / ".venv" / "bin" / "dbt").exists()
+        d["venv_has_dbt"] = venv_bin(Path(p.path) / ".venv", "dbt").exists()
         d["venv_exists"] = (Path(p.path) / ".venv").exists()
         d["requirements"] = (Path(p.path) / "requirements.txt").exists()
         d["profiles_path"] = str(jobs.profiles_path(p)) if not get_settings().hosted else "profiles.yml"

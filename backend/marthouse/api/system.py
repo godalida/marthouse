@@ -61,12 +61,17 @@ def _local_only() -> None:
 
 @router.post("/choose-folder")
 def choose_folder(_: Ctx = Depends(ctx)) -> dict:
-    """Native folder picker (macOS) for Open Project and offline installs."""
+    """Native folder picker (macOS and Windows) for Open Project and offline installs."""
     _local_only()
+    if sys.platform == "win32":
+        ps = ("[Console]::OutputEncoding = [Text.Encoding]::UTF8; Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.FolderBrowserDialog; "
+              "$f.Description = 'Choose a folder'; if ($f.ShowDialog() -eq 'OK') { $f.SelectedPath }")
+        r = subprocess.run(["powershell", "-NoProfile", "-STA", "-Command", ps], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600)
+        return {"path": r.stdout.strip() or None}
     if sys.platform != "darwin":
         raise HTTPException(501, "Type the folder path instead.")
     r = subprocess.run(["osascript", "-e", 'POSIX path of (choose folder with prompt "Choose a folder")'],
-                       capture_output=True, text=True, timeout=600)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600)
     if r.returncode != 0:
         return {"path": None}
     return {"path": r.stdout.strip().rstrip("/") or "/"}
@@ -98,6 +103,8 @@ def reveal(body: PathBody, _: Ctx = Depends(ctx)) -> dict:
     _local_only()
     if sys.platform == "darwin":
         subprocess.Popen(["open", "-R", body.path])
+    elif sys.platform == "win32":
+        subprocess.Popen(["explorer", f"/select,{body.path}"])
     return {"ok": True}
 
 
@@ -107,4 +114,6 @@ def terminal(body: PathBody, c: Ctx = Depends(ctx), db: Session = Depends(get_db
     app = appsettings.get(db, "terminal_app", c.ws) or "Terminal"
     if sys.platform == "darwin":
         subprocess.Popen(["open", "-a", app, body.path])
+    elif sys.platform == "win32" and Path(body.path).is_dir():
+        subprocess.Popen(["cmd.exe"], cwd=body.path, creationflags=subprocess.CREATE_NEW_CONSOLE)
     return {"ok": True}

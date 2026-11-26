@@ -4,6 +4,16 @@ All notable changes to Marthouse are listed here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+
+- **Windows support.** Marthouse finds and installs dbt and dlt in Windows environments (`Scripts\dbt.exe`), looks in Windows locations for pipx, uv and conda, uses the Windows folder picker, and can reveal files in Explorer and open a terminal in the project.
+- CI runs the tests on Windows, macOS and Linux, plus end-to-end dbt and dlt runs on Windows and Linux.
+
+### Changed
+
+- Files are always read and written as UTF-8, and dbt and dlt are asked to print UTF-8, so non-English text survives on every OS.
+- Git tokens for private repositories are passed through Git's environment configuration, limited to the repository's host, instead of a temporary helper script.
+
 ## [0.1.1] - 2026-11-27
 
 ### Fixed

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { api, useJob } from "../api";
 import { AppMark, I, type IconName } from "../icons";
-import { useSaveSettings, useSystem } from "../store";
+import { useHello, useSaveSettings, useSystem } from "../store";
 import { Btn, Callout, Console, Field, Radio, Seg, Select, Sheet, Spinner, Status, Steps, errText, useToast } from "../ui";
 
 export type Install = { path: string; kind: string; label: string; core: string | null; adapters: Record<string, string>; python: string | null; status: string; note: string; project: string | null; default?: boolean; hidden?: boolean; allowed?: boolean };
@@ -122,6 +122,7 @@ function adaptersText(i: Install) {
 }
 
 function Found() {
+  const win = useHello().data?.platform === "win32";
   const nav = useNavigate();
   const toast = useToast();
   const [found, setFound] = useState<Install[]>(store.get);
@@ -189,8 +190,8 @@ function Found() {
       </Foot>
       <Sheet open={manual} onClose={() => setManual(false)} label="Choose dbt" width={460}>
         <b className="t-title3">Choose a dbt executable</b>
-        <p className="c2 t-callout" style={{ lineHeight: "17px" }}>Paste the path to dbt, or to the environment folder that contains bin/dbt.</p>
-        <Field value={path} onChange={setPath} placeholder="/path/to/venv/bin/dbt" mono autoFocus onEnter={addManual} />
+        <p className="c2 t-callout" style={{ lineHeight: "17px" }}>Paste the path to dbt, or to the environment folder that contains {win ? "Scripts\\dbt.exe" : "bin/dbt"}.</p>
+        <Field value={path} onChange={setPath} placeholder={win ? "C:\\path\\to\\venv\\Scripts\\dbt.exe" : "/path/to/venv/bin/dbt"} mono autoFocus onEnter={addManual} />
         <div className="acts"><Btn onClick={() => setManual(false)}>Cancel</Btn><Btn kind="prominent" disabled={!path} onClick={addManual}>Check</Btn></div>
       </Sheet>
     </SetupWindow>

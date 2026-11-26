@@ -99,7 +99,7 @@ def default_dir(project_root: str | Path) -> Path:
 def load(path: Path) -> CommentedMap:
     if not path.exists():
         return CommentedMap()
-    data = _rt().load(path.read_text())
+    data = _rt().load(path.read_text(encoding="utf-8"))
     return data if isinstance(data, CommentedMap) else CommentedMap()
 
 
@@ -226,8 +226,8 @@ def save_target(db: Session, ws: str, path: Path, profile: str, target: str, fie
                 secrets_store.set_secret(db, ws, env_name(profile, rename_to or target, k), v)
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.exists():
-            (path.with_suffix(".yml.bak")).write_text(path.read_text())
-        path.write_text(text)
+            (path.with_suffix(".yml.bak")).write_text(path.read_text(), encoding="utf-8")
+        path.write_text(text, encoding="utf-8")
     return {"text": text, "block": block_text(data, profile, rename_to or target)}
 
 
@@ -250,7 +250,7 @@ def delete_target(path: Path, profile: str, target: str) -> None:
     outputs.pop(target, None)
     if data.get(profile, {}).get("target") == target:
         data[profile]["target"] = next(iter(outputs), "")
-    path.write_text(dump(data))
+    path.write_text(dump(data), encoding="utf-8")
 
 
 def secret_env(db: Session, ws: str, path: Path) -> dict[str, str]:
@@ -258,7 +258,7 @@ def secret_env(db: Session, ws: str, path: Path) -> dict[str, str]:
     if not path.exists():
         return {}
     env = {}
-    for name in set(ENV_RE.findall(path.read_text())):
+    for name in set(ENV_RE.findall(path.read_text(encoding="utf-8"))):
         v = secrets_store.get_secret(db, ws, name)
         if v is not None:
             env[name] = v

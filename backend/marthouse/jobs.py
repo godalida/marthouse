@@ -12,6 +12,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from .oscompat import BIN, exe, venv_bin
 from . import appsettings, profiles
 from .config import get_settings
 from .db import SessionLocal
@@ -44,7 +45,7 @@ def resolve_dbt(db: Session, project: Project | None, ws: str = "local") -> str:
     if default and os.access(default, os.X_OK):
         return default
     if get_settings().hosted:
-        found = sorted(get_settings().private_dbt_dir.glob("*/bin/dbt"))
+        found = sorted(get_settings().private_dbt_dir.glob(f"*/{BIN}/{exe('dbt')}"))
         if found:
             return str(found[-1])
         raise JobError("No dbt is installed for this workspace yet. Install one in Settings › dbt.")
@@ -69,6 +70,8 @@ def job_env(db: Session, project: Project | None, ws: str) -> dict[str, str]:
     env["PYTHONUNBUFFERED"] = "1"
     env["DBT_USE_COLORS"] = "false"
     env.setdefault("DBT_SEND_ANONYMOUS_USAGE_STATS", "false")
+    env.setdefault("PYTHONUTF8", "1")  # dbt and dlt print UTF-8 on every OS (Windows defaults to its code page)
+    env.setdefault("PYTHONIOENCODING", "utf-8")
     if project:
         env.update(profiles.secret_env(db, ws, profiles_path(project)))
     return env
@@ -439,7 +442,7 @@ def _post(kind: str, project: Project | None, run: _Run, status: str, ws: str) -
 
         with SessionLocal() as db:
             job = db.get(Job, run.job_id)
-            py = str(Path(job.params.get("root", "")) / "bin" / "python") if job else ""
+            py = str(venv_bin(job.params.get("root", ""), "python")) if job else ""
             if status == "success" and os.path.exists(py):
                 inst = dlt_tool.inspect(py, "private")
                 out["install"] = inst.to_dict()
@@ -450,8 +453,8 @@ def _post(kind: str, project: Project | None, run: _Run, status: str, ws: str) -
         with SessionLocal() as db:
             job = db.get(Job, run.job_id)
             root = Path(job.params.get("root", "")) if job else Path()
-            if status == "success" and (root / "bin" / "dbt").exists():
-                inst = detect.inspect(str(root / "bin" / "dbt"), "private")
+            if status == "success" and venv_bin(root, "dbt").exists():
+                inst = detect.inspect(str(venv_bin(root, "dbt")), "private")
                 out["install"] = inst.to_dict()
                 if not appsettings.get(db, "default_dbt", ws) or job.params.get("make_default"):
                     appsettings.update(db, {"default_dbt": inst.path}, ws)

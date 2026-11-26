@@ -11,6 +11,7 @@ from pathlib import Path
 
 from packaging.version import Version
 
+from ..oscompat import WINDOWS, env_python, exe, venv_bin, venv_glob
 from ..config import get_settings
 from ..dbt.detect import _shebang_python, login_shell_path
 from ..dbt.install import display, uv_bin
@@ -65,7 +66,7 @@ class DltInstall:
 def duckdb_version(python: str) -> str | None:
     """DuckDB version inside an environment. dbt and dlt must use the same one to share a DuckDB file."""
     try:
-        r = subprocess.run([python, "-c", "import importlib.metadata as m; print(m.version('duckdb'))"], capture_output=True, text=True, timeout=20)
+        r = subprocess.run([python, "-c", "import importlib.metadata as m; print(m.version('duckdb'))"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20)
         return (r.stdout.strip() or None) if r.returncode == 0 else None
     except Exception:
         return None
@@ -82,7 +83,7 @@ def inspect(python: str, kind: str = "custom") -> DltInstall:
         inst.status, inst.note = "broken", "Python is missing"
         return inst
     try:
-        r = subprocess.run([python, "-c", PROBE], capture_output=True, text=True, timeout=30)
+        r = subprocess.run([python, "-c", PROBE], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
         d = json.loads(r.stdout.strip().splitlines()[-1])
     except Exception:
         inst.status, inst.note = "broken", "dlt isn't installed in this environment"
@@ -98,21 +99,24 @@ def inspect(python: str, kind: str = "custom") -> DltInstall:
 
 def scan(project_dirs: list[str]) -> list[DltInstall]:
     cands: list[tuple[str, str]] = []
-    for p in sorted(glob.glob(str(tools_dir() / "*" / "bin" / "python"))):
+    for p in sorted(glob.glob(venv_glob(tools_dir(), "python"))):
         cands.append((p, "private"))
     for d in project_dirs:
         for venv in (".venv", "venv"):
-            py = Path(d) / venv / "bin" / "python"
-            if (Path(d) / venv / "bin" / "dlt").exists():
+            py = venv_bin(Path(d) / venv, "python")
+            if venv_bin(Path(d) / venv, "dlt").exists():
                 cands.append((str(py), "project"))
     for d in login_shell_path():
-        exe = Path(d) / "dlt"
-        if exe.exists():
-            py = _shebang_python(str(exe))
+        prog = Path(d) / exe("dlt")
+        if prog.exists():
+            py = _shebang_python(str(prog)) or env_python(prog)
             if py:
                 cands.append((py, "path"))
     home = Path.home()
-    for p in glob.glob(str(home / ".local/share/uv/tools/dlt/bin/python")) + glob.glob(str(home / ".local/pipx/venvs/dlt/bin/python")):
+    tool_envs = [home / ".local/share/uv/tools/dlt", home / ".local/pipx/venvs/dlt"]
+    if WINDOWS:
+        tool_envs += [Path(os.environ.get("APPDATA", "")) / "uv/tools/dlt", home / "pipx/venvs/dlt"]
+    for p in [str(venv_bin(e, "python")) for e in tool_envs if venv_bin(e, "python").exists()]:
         cands.append((p, "pipx"))
     seen: set[str] = set()
     out = []
@@ -153,8 +157,8 @@ def install_steps(version: str, destinations: list[str], sources: list[str], pyt
     uv = uv_bin()
     steps = [
         {"label": "Create a Python environment", "argv": [uv, "venv", "--python", python, "--seed", "--clear", str(root)]},
-        {"label": "Download and install dlt", "argv": [uv, "pip", "install", "--python", str(root / "bin" / "python"), *idx, *pkgs]},
-        {"label": "Check that dlt starts", "argv": [str(root / "bin" / "dlt"), "--version"]},
+        {"label": "Download and install dlt", "argv": [uv, "pip", "install", "--python", str(venv_bin(root, "python")), *idx, *pkgs]},
+        {"label": "Check that dlt starts", "argv": [str(venv_bin(root, "dlt")), "--version"]},
     ]
     for s in steps:
         s["display"] = display(s["argv"])

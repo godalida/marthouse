@@ -100,7 +100,7 @@ function DbtTab({ s, set }: { s: Record<string, any>; set: (v: Record<string, un
             <span className="vstack grow" style={{ gap: 2, minWidth: 0 }}>
               <span className="hstack" style={{ gap: 8 }}><b className={i.status === "ok" ? "" : "c2"}>{i.core ? `dbt-core ${i.core}` : "dbt"}</b>{i.default && <span className="t-subhead c2">Default</span>}{i.status === "ok" && !i.allowed && <span className="t-subhead c2">Outside allowed versions</span>}</span>
               <span className="t-subhead c2 trunc" title={i.path}>{i.path.replace(/^\/Users\/[^/]+/, "~")}</span>
-              <span className="t-subhead c2">{i.label}{i.project ? ` · for ${i.project.split("/").pop()}` : ""} · {i.status === "ok" ? Object.entries(i.adapters).map(([k, v]) => `${k} ${v}`).join(", ") : i.note}</span>
+              <span className="t-subhead c2">{i.label}{i.project ? ` · for ${i.project.split(/[\\/]/).pop()}` : ""} · {i.status === "ok" ? Object.entries(i.adapters).map(([k, v]) => `${k} ${v}`).join(", ") : i.note}</span>
             </span>
             {i.status === "ok" ? <Status s="works" /> : i.status === "too_old" ? <Status s="warn" label="Too old" /> : i.status === "fusion" ? <Status s="skipped" label="Fusion" /> : i.status === "no_adapter" ? <Status s="warn" label="No adapter" /> : <Status s="error" label="Broken" />}
             {!hosted && <Btn size="sm" onClick={() => api("/api/system/reveal", { body: { path: i.path } })}>Reveal</Btn>}

@@ -19,8 +19,24 @@ def _load(path: Path) -> dict | None:
 
 @lru_cache(maxsize=16)
 def _load_cached(path: str, mtime: float) -> dict:
-    with open(path) as f:
-        return json.load(f)
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    if path.endswith("manifest.json"):
+        _posix_paths(data)
+    return data
+
+
+PATH_KEYS = ("original_file_path", "path", "patch_path")
+
+
+def _posix_paths(m: dict) -> None:
+    """dbt on Windows writes file paths with backslashes; the app always uses forward slashes."""
+    for section in ("nodes", "sources", "exposures", "metrics", "semantic_models", "macros", "saved_queries"):
+        for n in (m.get(section) or {}).values():
+            for k in PATH_KEYS:
+                v = n.get(k)
+                if isinstance(v, str) and "\\" in v:
+                    n[k] = v.replace("\\", "/")
 
 
 def target_dir(root: str | Path, target_path: str = "target") -> Path:
@@ -70,7 +86,7 @@ def compiled_sql(root: str | Path, n: dict, tp: str = "target") -> str:
     for cand in (base / ofp, base / ofp / (n.get("path") or "")):
         if cand.is_file():
             try:
-                return cand.read_text()
+                return cand.read_text(encoding="utf-8")
             except OSError:
                 pass
     return ""
@@ -106,7 +122,7 @@ def remember_run(root: str | Path, tp: str = "target") -> None:
         by_id[r["unique_id"]] = r
     out = {"metadata": rr.get("metadata") or {}, "elapsed_time": rr.get("elapsed_time"), "results": list(by_id.values())}
     tmp = f.with_suffix(".tmp")
-    tmp.write_text(json.dumps(out))
+    tmp.write_text(json.dumps(out), encoding="utf-8")
     tmp.replace(f)
 
 

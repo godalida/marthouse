@@ -49,7 +49,7 @@ def list_specs(project: Project) -> list[dict]:
     out = []
     for f in sorted(d.glob("*.pipeline.yml")):
         try:
-            spec = dict(YAML(typ="safe").load(f.read_text()) or {})
+            spec = dict(YAML(typ="safe").load(f.read_text(encoding="utf-8")) or {})
             spec.setdefault("name", f.name.removesuffix(".pipeline.yml"))
             out.append(spec)
         except Exception as e:
@@ -61,7 +61,7 @@ def get_spec(project: Project, name: str) -> dict:
     f = pdir(project) / f"{name}.pipeline.yml"
     if not f.is_file():
         raise PipelineError(f"No pipeline called {name}.")
-    spec = dict(YAML(typ="safe").load(f.read_text()) or {})
+    spec = dict(YAML(typ="safe").load(f.read_text(encoding="utf-8")) or {})
     spec["name"] = name
     return spec
 
@@ -109,12 +109,12 @@ def save(db: Session, project: Project, spec: dict, secrets: dict[str, str]) -> 
     d.mkdir(parents=True, exist_ok=True)
     gi = d / ".gitignore"
     if not gi.exists():
-        gi.write_text(".dlt-data/\n.dlt/secrets.toml\n*.duckdb\n")
+        gi.write_text(".dlt-data/\n.dlt/secrets.toml\n*.duckdb\n", encoding="utf-8")
     clean = {k: v for k, v in spec.items() if k not in ("secrets",)}
-    with open(d / f"{spec['name']}.pipeline.yml", "w") as f:
+    with open(d / f"{spec['name']}.pipeline.yml", "w", encoding="utf-8") as f:
         _yaml().dump(clean, f)
     if spec["kind"] != "verified":
-        (d / f"{spec['name']}.py").write_text(codegen.generate(spec, dest_type))
+        (d / f"{spec['name']}.py").write_text(codegen.generate(spec, dest_type), encoding="utf-8")
     for k, v in (secrets or {}).items():
         if v:
             secrets_store.set_secret(db, project.workspace_id, codegen.secret_env(spec["name"], k), v)
@@ -195,7 +195,7 @@ def inspect(db: Session, project: Project, name: str, refresh_cache: bool = True
     spec = get_spec(project, name)
     py = default_python(db, project.workspace_id, project)
     env = {**os.environ, **run_env(db, project, spec)}
-    r = subprocess.run([py, str(INSPECTOR), pipeline_name(spec)], capture_output=True, text=True, timeout=120, env=env,
+    r = subprocess.run([py, str(INSPECTOR), pipeline_name(spec)], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, env=env,
                        cwd=str(pdir(project)))
     line = next((l for l in r.stdout.splitlines() if l.startswith("@@WB")), None)
     if not line:
@@ -203,14 +203,14 @@ def inspect(db: Session, project: Project, name: str, refresh_cache: bool = True
     data = json.loads(line[4:])
     if refresh_cache and data.get("ok"):
         cache_path(project, name).parent.mkdir(parents=True, exist_ok=True)
-        cache_path(project, name).write_text(json.dumps(data))
+        cache_path(project, name).write_text(json.dumps(data), encoding="utf-8")
     return data
 
 
 def cached(project: Project, name: str) -> dict | None:
     f = cache_path(project, name)
     try:
-        return json.loads(f.read_text()) if f.exists() else None
+        return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
     except Exception:
         return None
 
@@ -241,7 +241,7 @@ def generate_sources(project: Project, name: str, adapter: str) -> dict:
     y = YAML()
     y.preserve_quotes = True
     y.indent(mapping=2, sequence=4, offset=2)
-    doc = y.load(f.read_text()) if f.exists() else None
+    doc = y.load(f.read_text(encoding="utf-8")) if f.exists() else None
     from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
     if not doc:
@@ -277,7 +277,7 @@ def generate_sources(project: Project, name: str, adapter: str) -> dict:
             cols.append(col)
             added_c += 1
     f.parent.mkdir(parents=True, exist_ok=True)
-    with open(f, "w") as fh:
+    with open(f, "w", encoding="utf-8") as fh:
         y.dump(doc, fh)
     return {"path": rel, "tables_added": added_t, "columns_added": added_c, "source": dataset}
 
@@ -354,7 +354,7 @@ def try_request(url: str, headers: dict[str, str], hosted: bool) -> dict:
 
 def verified_sources(py: str) -> list[dict]:
     dlt_bin = str(Path(py).with_name("dlt"))
-    r = subprocess.run([dlt_bin, "--non-interactive", "init", "--list-sources"], capture_output=True, text=True, timeout=120)
+    r = subprocess.run([dlt_bin, "--non-interactive", "init", "--list-sources"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
     out = []
     for line in r.stdout.splitlines():
         m = re.match(r"^([a-z0-9_]+):\s+(.*)$", line.strip())
@@ -371,7 +371,7 @@ def read_verified_secrets(project: Project, source: str) -> list[str]:
     if not f.exists():
         return []
     keys, section = [], ""
-    for line in f.read_text().splitlines():
+    for line in f.read_text(encoding="utf-8").splitlines():
         s = line.strip()
         if s.startswith("["):
             section = s.strip("[]")

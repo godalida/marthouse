@@ -17,6 +17,7 @@ from packaging.specifiers import SpecifierSet
 from packaging.version import InvalidVersion, Version
 
 from ..config import get_settings
+from ..oscompat import WINDOWS, env_python, exe, path_dirs, venv_bin, venv_glob
 
 MIN_VERSION = Version("1.8")
 
@@ -67,15 +68,19 @@ class Install:
 
 
 def login_shell_path() -> list[str]:
-    """PATH as the user's login shell sees it (a GUI-launched process gets a short PATH)."""
+    """PATH as the user's login shell sees it (a GUI-launched process gets a short PATH).
+
+    Windows has no login shell; the process's own PATH is the user's PATH there.
+    """
     paths: list[str] = []
-    shell = os.environ.get("SHELL", "/bin/zsh")
-    try:
-        out = subprocess.run([shell, "-lc", 'printf %s "$PATH"'], capture_output=True, text=True, timeout=6).stdout
-        paths += [p for p in out.split(":") if p]
-    except Exception:
-        pass
-    paths += [p for p in os.environ.get("PATH", "").split(":") if p]
+    if not WINDOWS:
+        shell = os.environ.get("SHELL", "/bin/zsh")
+        try:
+            out = subprocess.run([shell, "-lc", 'printf %s "$PATH"'], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=6).stdout
+            paths += [p for p in out.split(":") if p]
+        except Exception:
+            pass
+    paths += path_dirs()
     seen: set[str] = set()
     return [p for p in paths if not (p in seen or seen.add(p))]
 
@@ -84,9 +89,9 @@ def locations(project_dirs: list[str] | None = None) -> list[Location]:
     home = Path.home()
     locs = [
         Location("project", "Project folders", ", ".join(Path(p).name for p in (project_dirs or [])) or ".venv and venv in recent projects"),
-        Location("path", "Your shell's PATH", "read from your login shell"),
-        Location("pipx", "pipx and uv tools", str(home / ".local")),
-        Location("brew", "Homebrew", "/opt/homebrew and /usr/local"),
+        Location("path", "Your PATH" if WINDOWS else "Your shell's PATH", "the PATH environment variable" if WINDOWS else "read from your login shell"),
+        Location("pipx", "pipx and uv tools", str(home / "pipx") if WINDOWS else str(home / ".local")),
+        *([] if WINDOWS else [Location("brew", "Homebrew", "/opt/homebrew and /usr/local")]),
         Location("conda", "conda environments", "miniforge, miniconda, anaconda"),
         Location("private", "Marthouse's private copy", str(get_settings().private_dbt_dir)),
     ]
@@ -104,10 +109,23 @@ def _candidates(loc: str, project_dirs: list[str]) -> list[tuple[str, str | None
     if loc == "project":
         for d in project_dirs:
             for venv in (".venv", "venv", "env"):
-                add(str(Path(d) / venv / "bin" / "dbt"), d)
+                add(str(venv_bin(Path(d) / venv, "dbt")), d)
     elif loc == "path":
         for d in login_shell_path():
-            add(str(Path(d) / "dbt"))
+            add(str(Path(d) / exe("dbt")))
+    elif loc == "pipx" and WINDOWS:
+        appdata, local = os.environ.get("APPDATA", ""), os.environ.get("LOCALAPPDATA", "")
+        add(str(home / ".local/bin/dbt.exe"))
+        add(venv_glob(home / "pipx/venvs", "dbt"))
+        if local:
+            add(venv_glob(Path(local) / "pipx/pipx/venvs", "dbt"))
+        if appdata:
+            add(venv_glob(Path(appdata) / "uv/tools", "dbt"))
+            add(str(Path(appdata) / "Python/Python3*/Scripts/dbt.exe"))
+    elif loc == "conda" and WINDOWS:
+        for base in ("miniforge3", "miniconda3", "anaconda3", "mambaforge"):
+            add(str(home / base / "Scripts/dbt.exe"))
+            add(venv_glob(home / base / "envs", "dbt"))
     elif loc == "pipx":
         add(str(home / ".local/bin/dbt"))
         add(str(home / ".local/pipx/venvs/*/bin/dbt"))
@@ -122,7 +140,7 @@ def _candidates(loc: str, project_dirs: list[str]) -> list[tuple[str, str | None
             add(str(home / base / "bin/dbt"))
             add(str(home / base / "envs/*/bin/dbt"))
     elif loc == "private":
-        add(str(get_settings().private_dbt_dir / "*/bin/dbt"))
+        add(venv_glob(get_settings().private_dbt_dir, "dbt"))
     return out
 
 
@@ -152,11 +170,11 @@ def inspect(exe: str, kind: str = "custom", project: str | None = None) -> Insta
     if not os.access(exe, os.X_OK):
         inst.status, inst.note = "broken", "File is missing or not executable"
         return inst
-    py = _shebang_python(exe)
+    py = _shebang_python(exe) or env_python(exe)
     if py and os.path.exists(py):
         inst.python = py
         try:
-            r = subprocess.run([py, "-c", PROBE], capture_output=True, text=True, timeout=20)
+            r = subprocess.run([py, "-c", PROBE], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20)
             pkgs = json.loads(r.stdout.strip().splitlines()[-1]) if r.returncode == 0 and r.stdout.strip() else {}
         except Exception:
             pkgs = {}
@@ -165,7 +183,7 @@ def inspect(exe: str, kind: str = "custom", project: str | None = None) -> Insta
     if inst.core is None:
         # Not a Python launcher (or the probe failed): ask the binary.
         try:
-            r = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=30)
+            r = subprocess.run([exe, "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
             text = r.stdout + r.stderr
         except Exception as e:
             inst.status, inst.note = "broken", f"Could not run: {e}"
