@@ -1,6 +1,6 @@
 [project]
 name = "marthouse"
-version = "0.1.1"
+version = "0.2.0"
 description = "The open-source app for dbt Core and dlt: load, transform and explore your data without living in a terminal."
 readme = "README.md"
 authors = [{ name = "Glenn Dalida" }]

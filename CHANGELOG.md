@@ -4,10 +4,16 @@ All notable changes to Marthouse are listed here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-27
+
 ### Added
 
 - **Windows support.** Marthouse finds and installs dbt and dlt in Windows environments (`Scripts\dbt.exe`), looks in Windows locations for pipx, uv and conda, uses the Windows folder picker, and can reveal files in Explorer and open a terminal in the project.
 - CI runs the tests on Windows, macOS and Linux, plus end-to-end dbt and dlt runs on Windows and Linux.
+
+### Fixed
+
+- Installing from source (`pip install -e backend`) works again.
 
 ### Changed
 
@@ -34,6 +40,7 @@ First public release.
 - **Schedules** with webhook alerts on failure.
 - **Team mode (self-hosted):** accounts, workspaces, roles, Git checkouts, a job worker over Redis, and Docker Compose.
 
-[Unreleased]: https://github.com/godalida/marthouse/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/godalida/marthouse/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/godalida/marthouse/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/godalida/marthouse/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/godalida/marthouse/releases/tag/v0.1.0
